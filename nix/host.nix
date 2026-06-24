@@ -23,9 +23,8 @@
     starship
   ];
 
-  system.primaryUser = "yourname";
-  users.users.yourname = {
-    home = "/Users/yourname";
+  users.users.yash_khandelwal = {
+    home = "/Users/yash_khandelwal";
     shell = pkgs.zsh;
   };
 
@@ -56,7 +55,7 @@
 
   environment.systemPath = [
     "/run/current-system/sw/bin"
-    "/etc/profiles/per-user/yourname/bin"
+    "/etc/profiles/per-user/yash_khandelwal/bin"
   ];
 
   system.stateVersion = 6;

@@ -1,11 +1,11 @@
 { config, pkgs, ... }:
 
 let
-  dotfilesDir = "${config.home.homeDirectory}/github/dotfiles-mac-nix";
+  dotfilesDir = "${config.home.homeDirectory}/Desktop/Reproducible Mac/dotfiles-mac-nix";
 in
 {
-  home.username = "yourname";
-  home.homeDirectory = "/Users/yourname";
+  home.username = "yash_khandelwal";
+  home.homeDirectory = "/Users/yash_khandelwal";
   home.stateVersion = "23.11";
   home.language.base = "en_US.UTF-8";
 
@@ -24,7 +24,7 @@ in
     rustup
     zip
     unzip
-    nerd-fonts.hack
+    (nerdfonts.override { fonts = [ "Hack" ]; })
     roboto
     noto-fonts
     noto-fonts-cjk-sans
@@ -41,12 +41,9 @@ in
   programs.git = {
     enable = true;
     lfs.enable = true;
-    signing.format = null;
-    settings = {
-      user = {
-        name = "Your Name";
-        email = "you@example.com";
-      };
+    userName = "Yash Khandelwal";
+    userEmail = "yash.khandelwal943@gmail.com";
+    extraConfig = {
       core.editor = "vim";
       color.ui = true;
       push.autoSetupRemote = true;
@@ -114,9 +111,9 @@ in
       reset = "git reset --soft HEAD^";
       rebasem = "git rebase -i main";
       rebasemst = "git rebase -i master";
-      rebuild = "/run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles-mac-nix#mac";
+      rebuild = "/run/current-system/sw/bin/darwin-rebuild switch --flake ~/Desktop/Reproducible\\ Mac/dotfiles-mac-nix#mac";
     };
-    initContent = ''
+    initExtra = ''
       bindkey '^f' autosuggest-accept
     '';
   };
