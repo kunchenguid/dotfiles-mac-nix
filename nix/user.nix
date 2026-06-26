@@ -41,7 +41,7 @@ in
   programs.git = {
     enable = true;
     lfs.enable = true;
-    userName = "Yash Khandelwal";
+    userName = "YashWonder3";
     userEmail = "yash.khandelwal943@gmail.com";
     extraConfig = {
       core.editor = "vim";
