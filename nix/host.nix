@@ -13,6 +13,7 @@
     brews = [
       "autoconf"
       "colima"
+      "goenv"
     ];
     casks = [
       "wezterm"

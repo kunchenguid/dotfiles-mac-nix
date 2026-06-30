@@ -16,6 +16,8 @@ Portable, reproducible developer setup for macOS (Monterey 12.7.6+, Intel x86_64
 | Python | python3 (Nix) + uv | `home.packages` + `initExtra` |
 | Docker | Colima + docker-client | `nix/host.nix` + `nix/user.nix` |
 | Java | Eclipse Temurin 21 LTS | `homebrew.casks` in `nix/host.nix` + `envExtra` in `nix/user.nix` |
+| Editor | Neovim 0.10.2 | `home.packages` in `nix/user.nix` |
+| Go | goenv (multi-version) | `homebrew.brews` in `nix/host.nix` + `initExtra` |
 
 ---
 
@@ -117,6 +119,7 @@ Python version shows as `🐍3.12.x(venv-name)` only in directories with Python 
 | `dstart` | `colima start` |
 | `dstop` | `colima stop` |
 | `dstatus` | `colima status` |
+| `vim` | `nvim` |
 
 ### Key bindings
 
@@ -257,6 +260,87 @@ javac -version        # javac 21.x.x
 | Compatibility | Java 21 LTS | Java 21 LTS (identical) |
 
 Both pass the Java TCK — for development they are interchangeable.
+
+---
+
+## Go (goenv)
+
+Multiple Go versions managed via `goenv` (Homebrew), with per-project version pinning via `.go-version` files — the same pattern as Python's `.python-version`.
+
+### Per-project workflow
+
+```bash
+# One-time: install the Go versions you need
+goenv install 1.23.0
+goenv install 1.22.6
+
+# Set a global default
+goenv global 1.23.0
+
+# Per project
+cd my-project
+echo "1.22.6" > .go-version    # goenv auto-switches when you cd in
+go version                      # → go1.22.6
+```
+
+goenv auto-switches the active Go version whenever you `cd` into a directory with a `.go-version` file — in both WezTerm and tmux, because init runs in every interactive shell via `initExtra`.
+
+### PATH layout
+
+| Path | Purpose |
+|---|---|
+| `~/.goenv/bin` | goenv binary |
+| `~/.goenv/shims` | shims for `go`, `gofmt`, etc. (added by `goenv init -`) |
+| `~/go/bin` | `GOPATH/bin` — installed Go tools (`go install ...`) |
+
+### Verify
+
+```bash
+goenv versions        # list installed versions
+go version            # active version in current directory
+echo $GOPATH          # ~/go
+which go              # ~/.goenv/shims/go
+```
+
+### Consistency across WezTerm and tmux
+
+`goenv init -` runs in `initExtra` (→ `~/.zshrc`) on every interactive shell start. Both WezTerm windows and tmux panes source `~/.zshrc`, so the same Go version is active in both based on the `.go-version` file in your current directory.
+
+---
+
+## Neovim
+
+Installed via Nix (`neovim` 0.10.2) — always in PATH in both WezTerm and tmux via the Nix profile.
+
+```bash
+nvim file.txt     # open file
+vim file.txt      # alias → nvim
+```
+
+### What's pre-wired for compatibility
+
+| Feature | How |
+|---|---|
+| True color | tmux sets `terminal-overrides` for `xterm-256color:RGB`; WezTerm passes through 24-bit color |
+| `TERM` | tmux sets `tmux-256color`; Neovim detects true color automatically |
+| Pane navigation | tmux `vim-tmux-navigator` plugin installed — add the matching Neovim plugin to use `Ctrl+h/j/k/l` across panes and splits |
+| Default editor | `EDITOR=nvim` set in `home.sessionVariables` — used by git commit, `fc`, etc. |
+| Git commit editor | `core.editor = nvim` in `programs.git` |
+
+### vim-tmux-navigator Neovim plugin
+
+The tmux side is already configured. To complete the integration, add this to your Neovim plugin manager:
+
+```lua
+-- lazy.nvim
+{ "christoomey/vim-tmux-navigator" }
+```
+
+Once installed, `Ctrl+h/j/k/l` navigates seamlessly between Neovim splits and tmux panes in both WezTerm and tmux.
+
+### Config location
+
+Neovim config is intentionally not managed by this repo (too personal). Place yours at `~/.config/nvim/`. It will persist across rebuilds since Home Manager does not touch that path.
 
 ---
 

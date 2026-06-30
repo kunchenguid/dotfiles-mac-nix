@@ -29,6 +29,7 @@ in
     python3
     docker-client
     docker-compose
+    neovim
     (nerdfonts.override { fonts = [ "Hack" ]; })
     roboto
     noto-fonts
@@ -40,7 +41,7 @@ in
   fonts.fontconfig.enable = true;
 
   home.sessionVariables = {
-    EDITOR = "vim";
+    EDITOR = "nvim";
     UV_PYTHON_PREFERENCE = "managed";
   };
 
@@ -50,7 +51,7 @@ in
     userName = "YashWonder3";
     userEmail = "yash.khandelwal943@gmail.com";
     extraConfig = {
-      core.editor = "vim";
+      core.editor = "nvim";
       color.ui = true;
       push.autoSetupRemote = true;
       pull.rebase = true;
@@ -121,6 +122,7 @@ in
       dstart = "colima start";
       dstop = "colima stop";
       dstatus = "colima status";
+      vim = "nvim";
     };
     envExtra = ''
       # Prefer Temurin 21 (managed via dotfiles); fall back to any Java 21 on the machine
@@ -142,6 +144,13 @@ in
       export NVM_DIR="$HOME/.nvm"
       [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
       [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+
+      # goenv — per-project Go version management via .go-version files
+      export GOENV_ROOT="$HOME/.goenv"
+      export GOPATH="$HOME/go"
+      [ -d "$GOENV_ROOT/bin" ] && path=("$GOENV_ROOT/bin" $path)
+      command -v goenv &>/dev/null && eval "$(goenv init -)"
+      path=("$GOPATH/bin" $path)
 
       # Auto-activate uv venv when entering a project directory
       function _uv_venv_activate() {
