@@ -12,10 +12,12 @@
     taps = [ ];
     brews = [
       "autoconf"
+      "colima"
     ];
     casks = [
       "wezterm"
       "amethyst"
+      "temurin@21"
     ];
   };
 
