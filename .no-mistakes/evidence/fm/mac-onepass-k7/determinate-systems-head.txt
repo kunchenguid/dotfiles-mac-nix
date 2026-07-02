@@ -1,4 +1,4 @@
-HTTP/2 307 
+HTTP/2 307
 content-length: 0
 date: Thu, 02 Jul 2026 18:30:05 GMT
 x-content-type-options: nosniff
@@ -11,4 +11,3 @@ x-cache: Miss from cloudfront
 via: 1.1 a82744d73a9589befe4efdd723d94198.cloudfront.net (CloudFront)
 x-amz-cf-pop: SFO53-P4
 x-amz-cf-id: 1tqoWNKQXEde2VKPvLnAr0N56UxsyKt-eYi0dmqaSkv7UyF4iXMSOA==
-
