@@ -64,68 +64,118 @@ assert_line_count() {
   return 0
 }
 
+sandbox_guard_violation() {
+  local target="$1"
+  local abs_sandbox="${2:-unknown}"
+
+  echo "HERMETIC VIOLATION: refusing to write outside sandbox: $target (sandbox: $abs_sandbox)" >&2
+  exit 1
+}
+
 # Refuse harness writes that escape the per-scenario temp sandbox. Stubs source
 # the generated copy at $SANDBOX_GUARD and call guard_write_path before writing.
-assert_path_under_sandbox() {
+guard_write_path() {
   local target="$1"
-  local abs_sandbox parent resolved
+  local abs_sandbox current raw_path component resolved
+  local -a components
 
   if [ -z "${SANDBOX_ROOT:-}" ]; then
     echo "HERMETIC VIOLATION: SANDBOX_ROOT is unset (refusing write to $target)" >&2
     exit 1
   fi
 
-  abs_sandbox=$(cd "$SANDBOX_ROOT" && pwd -P)
-
-  parent=$(dirname "$target")
-  if [ -d "$parent" ]; then
-    resolved=$(cd "$parent" && pwd -P)/$(basename "$target")
-    case "$resolved" in
-      "$abs_sandbox" | "$abs_sandbox"/*) return 0 ;;
-    esac
+  if [ -z "$target" ]; then
+    sandbox_guard_violation "$target"
   fi
 
+  abs_sandbox=$(cd "$SANDBOX_ROOT" && pwd -P)
+
   case "$target" in
-    "$SANDBOX_ROOT" | "$SANDBOX_ROOT"/*) return 0 ;;
+    /*)
+      current="/"
+      raw_path="${target#/}"
+      ;;
+    *)
+      current=$(pwd -P)
+      raw_path="$target"
+      ;;
+  esac
+
+  IFS="/" read -r -a components <<< "$raw_path"
+  for component in "${components[@]}"; do
+    case "$component" in
+      "" | ".")
+        continue
+        ;;
+      "..")
+        if [ "$current" != "/" ]; then
+          current="${current%/*}"
+          [ -n "$current" ] || current="/"
+        fi
+        ;;
+      *)
+        if [ "$current" = "/" ]; then
+          current="/$component"
+        else
+          current="$current/$component"
+        fi
+        ;;
+    esac
+
+    if [ -d "$current" ]; then
+      resolved=$(cd "$current" && pwd -P)
+      current="$resolved"
+    fi
+  done
+
+  if [ -L "$current" ]; then
+    sandbox_guard_violation "$target" "$abs_sandbox"
+  fi
+
+  case "$current" in
     "$abs_sandbox" | "$abs_sandbox"/*) return 0 ;;
   esac
 
-  echo "HERMETIC VIOLATION: refusing to write outside sandbox: $target (sandbox: $abs_sandbox)" >&2
-  exit 1
+  sandbox_guard_violation "$target" "$abs_sandbox"
+}
+
+assert_path_under_sandbox() {
+  guard_write_path "$1"
+}
+
+assert_guard_allows() {
+  local target="$1" msg="$2" status
+  set +e
+  ( guard_write_path "$target" ) >/dev/null 2>&1
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    pass "$msg"
+  else
+    fail "$msg"
+  fi
+}
+
+assert_guard_rejects() {
+  local target="$1" msg="$2" status
+  set +e
+  ( guard_write_path "$target" ) >/dev/null 2>&1
+  status=$?
+  set -e
+  if [ "$status" -eq 0 ]; then
+    fail "$msg"
+  else
+    pass "$msg"
+  fi
 }
 
 write_sandbox_guard() {
   local guard_path="$1"
-  assert_path_under_sandbox "$guard_path"
-  cat > "$guard_path" <<'GUARD'
-guard_write_path() {
-  local target="$1"
-  local abs_sandbox parent resolved
-
-  if [ -z "${SANDBOX_ROOT:-}" ]; then
-    echo "HERMETIC VIOLATION: SANDBOX_ROOT is unset (refusing write to $target)" >&2
-    exit 1
-  fi
-
-  abs_sandbox=$(cd "$SANDBOX_ROOT" && pwd -P)
-
-  parent=$(dirname "$target")
-  if [ -d "$parent" ]; then
-    resolved=$(cd "$parent" && pwd -P)/$(basename "$target")
-    case "$resolved" in
-      "$abs_sandbox" | "$abs_sandbox"/*) return 0 ;;
-    esac
-  fi
-
-  case "$target" in
-    "$SANDBOX_ROOT" | "$SANDBOX_ROOT"/*) return 0 ;;
-    "$abs_sandbox" | "$abs_sandbox"/*) return 0 ;;
-  esac
-
-  echo "HERMETIC VIOLATION: refusing to write outside sandbox: $target (sandbox: $abs_sandbox)" >&2
-  exit 1
-}
-GUARD
+  guard_write_path "$guard_path"
+  {
+    declare -f sandbox_guard_violation
+    declare -f guard_write_path
+  } > "$guard_path"
 }
 
 # Copy the repo into a scratch dir and replace the placeholder values so the
@@ -149,6 +199,29 @@ write_stub() {
   mkdir -p "$(dirname "$path")"
   cat > "$path"
   chmod +x "$path"
+}
+
+test_sandbox_guard() {
+  local root sandbox leak
+  root=$(mktemp -d "${TMPDIR:-/tmp}/mac-setup-guard.XXXXXX")
+  sandbox="$root/sandbox"
+  leak="$root/leak"
+
+  mkdir -p "$sandbox" "$leak"
+  export SANDBOX_ROOT="$sandbox"
+
+  assert_guard_allows "$sandbox/new/path/log" \
+    "sandbox guard allows nested sandbox write"
+  assert_guard_rejects "$sandbox/../leak/log" \
+    "sandbox guard rejects parent traversal escape"
+  ln -s "$leak/log" "$sandbox/log-link"
+  assert_guard_rejects "$sandbox/log-link" \
+    "sandbox guard rejects symlinked target"
+  ln -s "$leak" "$sandbox/leak-link"
+  assert_guard_rejects "$sandbox/leak-link/log" \
+    "sandbox guard rejects symlinked parent escape"
+
+  rm -rf "$root"
 }
 
 # Stub executables shared by both scenarios. Every one of them only ever
@@ -231,7 +304,12 @@ if [ -n "${NVM_DIR:-}" ]; then
   guard_write_path "$NVM_DIR/nvm.sh"
   mkdir -p "$NVM_DIR"
   cat > "$NVM_DIR/nvm.sh" <<'NVMSH'
-nvm() { echo "nvm $*" >> "$STUB_LOG"; }
+# shellcheck source=/dev/null
+. "$SANDBOX_GUARD"
+nvm() {
+  guard_write_path "$STUB_LOG"
+  echo "nvm $*" >> "$STUB_LOG"
+}
 NVMSH
 fi
 exit 0
@@ -335,6 +413,7 @@ EOF
   fi
 }
 
+test_sandbox_guard
 run_scenario "fresh-machine"
 run_scenario "already-installed"
 
