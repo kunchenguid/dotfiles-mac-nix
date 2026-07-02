@@ -88,7 +88,8 @@ guard_write_path() {
     sandbox_guard_violation "$target"
   fi
 
-  abs_sandbox=$(cd "$SANDBOX_ROOT" && pwd -P)
+  abs_sandbox=$(cd "$SANDBOX_ROOT" && pwd -P) ||
+    sandbox_guard_violation "$target" "${SANDBOX_ROOT:-unknown}"
 
   case "$target" in
     /*)
@@ -233,8 +234,9 @@ write_shared_stubs() {
 
   write_stub "$stub_bin/curl" <<'EOF'
 #!/bin/bash
+set -euo pipefail
 # shellcheck source=/dev/null
-. "$SANDBOX_GUARD"
+. "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "curl $*" >> "$STUB_LOG"
 url=""
@@ -257,8 +259,9 @@ EOF
 
   write_stub "$stub_bin/sh" <<'EOF'
 #!/bin/bash
+set -euo pipefail
 # shellcheck source=/dev/null
-. "$SANDBOX_GUARD"
+. "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "sh $*" >> "$STUB_LOG"
 cat >/dev/null
@@ -271,8 +274,9 @@ mkdir -p "$STUB_NIX_BIN_DIR"
 guard_write_path "$STUB_NIX_BIN_DIR/nix"
 cat > "$STUB_NIX_BIN_DIR/nix" <<'NIXBIN'
 #!/bin/bash
+set -euo pipefail
 # shellcheck source=/dev/null
-. "$SANDBOX_GUARD"
+. "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "nix $*" >> "$STUB_LOG"
 exit 0
@@ -285,8 +289,9 @@ EOF
 
   write_stub "$stub_bin/sudo" <<'EOF'
 #!/bin/bash
+set -euo pipefail
 # shellcheck source=/dev/null
-. "$SANDBOX_GUARD"
+. "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "sudo $*" >> "$STUB_LOG"
 exec "$@"
@@ -296,16 +301,18 @@ EOF
   # every other bash invocation in the script uses an absolute /bin/bash.
   write_stub "$stub_bin/bash" <<'EOF'
 #!/bin/bash
+set -euo pipefail
 # shellcheck source=/dev/null
-. "$SANDBOX_GUARD"
+. "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "bash $*" >> "$STUB_LOG"
 if [ -n "${NVM_DIR:-}" ]; then
   guard_write_path "$NVM_DIR/nvm.sh"
   mkdir -p "$NVM_DIR"
   cat > "$NVM_DIR/nvm.sh" <<'NVMSH'
+set -euo pipefail
 # shellcheck source=/dev/null
-. "$SANDBOX_GUARD"
+. "${SANDBOX_GUARD:?}" || exit 1
 nvm() {
   guard_write_path "$STUB_LOG"
   echo "nvm $*" >> "$STUB_LOG"
@@ -353,8 +360,9 @@ run_scenario() {
     # darwin-rebuild are already resolvable, so the installer must not run.
     write_stub "$stub_bin/nix" <<'EOF'
 #!/bin/bash
+set -euo pipefail
 # shellcheck source=/dev/null
-. "$SANDBOX_GUARD"
+. "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "nix $*" >> "$STUB_LOG"
 exit 0
@@ -362,8 +370,9 @@ EOF
     export DARWIN_REBUILD_BIN="$sandbox/current-system/sw/bin/darwin-rebuild"
     write_stub "$DARWIN_REBUILD_BIN" <<'EOF'
 #!/bin/bash
+set -euo pipefail
 # shellcheck source=/dev/null
-. "$SANDBOX_GUARD"
+. "${SANDBOX_GUARD:?}" || exit 1
 guard_write_path "$STUB_LOG"
 echo "darwin-rebuild $*" >> "$STUB_LOG"
 exit 0
