@@ -325,7 +325,7 @@ EOF
 
 run_scenario() {
   local name="$1"
-  local sandbox stub_bin fixture home_dir log
+  local sandbox stub_bin fixture home_dir log startup_env_hook startup_env_sentinel
   sandbox=$(mktemp -d "${TMPDIR:-/tmp}/mac-setup-test-${name}.XXXXXX")
   if [ -z "${DEBUG_KEEP_SANDBOX:-}" ]; then
     trap 'rm -rf "$sandbox"' RETURN
@@ -354,6 +354,15 @@ run_scenario() {
   # Re-home NVM_DIR: an inherited absolute NVM_DIR (e.g. from hm-session-vars.sh)
   # would otherwise leak writes out of the sandbox when the bash stub runs.
   export NVM_DIR="$HOME/.nvm"
+  startup_env_hook="$sandbox/startup-env-hook.sh"
+  startup_env_sentinel="$sandbox/startup-env-ran"
+  assert_path_under_sandbox "$startup_env_hook"
+  cat > "$startup_env_hook" <<HOOK
+printf '%s\n' startup-env-ran >> "$startup_env_sentinel"
+HOOK
+  local BASH_ENV="$startup_env_hook"
+  local ENV="$startup_env_hook"
+  export BASH_ENV ENV
 
   if [ "$name" = "already-installed" ]; then
     # Simulate a machine that has already been bootstrapped once: nix and
@@ -385,7 +394,7 @@ EOF
 
   local out status
   set +e
-  out=$(PATH="$stub_bin:/usr/bin:/bin:/usr/sbin:/sbin" "$REAL_BASH" "$fixture/setup/mac.sh" 2>&1)
+  out=$(env -u BASH_ENV -u ENV PATH="$stub_bin:/usr/bin:/bin:/usr/sbin:/sbin" "$REAL_BASH" "$fixture/setup/mac.sh" 2>&1)
   status=$?
   set -e
 
@@ -395,6 +404,11 @@ EOF
     return
   fi
   pass "$name: setup/mac.sh completed in a single pass"
+  if [ -e "$startup_env_sentinel" ]; then
+    fail "$name: inherited shell startup env was sourced"
+    return
+  fi
+  pass "$name: inherited shell startup env was ignored"
 
   local invocations
   invocations=$(cat "$log")
