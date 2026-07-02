@@ -10,6 +10,8 @@ bash tests/mac_setup_test.sh
 It never runs the script against the real machine, since that script installs Nix and activates a real `nix-darwin` system.
 Instead it runs the actual `setup/mac.sh` against a PATH-masked sandbox of stub executables (`curl`, `sh`, `nix`, `darwin-rebuild`, `sudo`, `bash`) that simulate a fresh Mac.
 The stubs also make sure the bootstrap uses the canonical `install.determinate.systems` installer URL.
+The harness re-homes `NVM_DIR` under the sandboxed `HOME`, clears inherited `BASH_ENV`/`ENV` for the script invocation, and guards all harness/stub write paths so parent traversal or symlink escapes fail before anything is written.
+It also self-tests that sandbox guard before running the bootstrap scenarios.
 
 It covers two scenarios:
 

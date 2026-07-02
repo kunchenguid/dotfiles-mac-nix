@@ -39,4 +39,6 @@ For normal bootstrap usage, leave them unset.
 bash tests/mac_setup_test.sh
 ```
 
-runs the actual script against a PATH-masked sandbox of stub executables that simulate a fresh Mac (and a second scenario for a machine that's already bootstrapped), without touching the network, the Nix store, Homebrew, sudo, or system state. See `AGENTS.md` for details.
+This runs the actual script against a PATH-masked sandbox of stub executables that simulate a fresh Mac (and a second scenario for a machine that's already bootstrapped), without touching the network, the Nix store, Homebrew, sudo, or system state.
+The harness also re-homes `NVM_DIR` under the sandboxed `HOME`, unsets inherited `BASH_ENV`/`ENV`, and refuses any harness or stub write path that escapes the temp sandbox.
+See `AGENTS.md` for details.

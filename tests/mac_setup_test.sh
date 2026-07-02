@@ -9,7 +9,10 @@
 # fresh Mac: they record every invocation to a log and fake just enough
 # filesystem state (a profile script, a "nix" binary) for the script's own
 # logic to progress, without ever touching the real network, Nix store,
-# Homebrew, or sudo.
+# Homebrew, sudo, or system state. The harness guards every intentional
+# harness/stub write against sandbox escapes, re-homes NVM_DIR under the
+# sandboxed HOME, and clears inherited shell startup hooks before invoking the
+# script under test.
 #
 # Run: bash tests/mac_setup_test.sh
 
