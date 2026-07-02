@@ -1,0 +1,5 @@
+curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+sudo /var/folders/5x/4nqprlbx0518k3ybcb1sz6gr0000gn/T//mac-setup-test-already-installed.60r9ic/current-system/sw/bin/darwin-rebuild switch --flake /var/folders/5x/4nqprlbx0518k3ybcb1sz6gr0000gn/T/mac-setup-test-already-installed.60r9ic/repo#mac
+darwin-rebuild switch --flake /var/folders/5x/4nqprlbx0518k3ybcb1sz6gr0000gn/T/mac-setup-test-already-installed.60r9ic/repo#mac
+bash -c curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+nvm install --lts

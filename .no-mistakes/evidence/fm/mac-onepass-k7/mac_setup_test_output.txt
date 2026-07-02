@@ -1,0 +1,15 @@
+DEBUG: keeping sandbox /var/folders/5x/4nqprlbx0518k3ybcb1sz6gr0000gn/T//mac-setup-test-fresh-machine.qMhttW
+PASS: fresh-machine: setup/mac.sh completed in a single pass
+PASS: fresh-machine: canonical Determinate URL requested
+PASS: fresh-machine: wrong .sh domain never requested
+PASS: fresh-machine: installer invoked
+PASS: fresh-machine: hardened first-activation invocation ran exactly once
+PASS: fresh-machine: experimental features enabled for first activation
+PASS: fresh-machine: already-installed fast path not used
+DEBUG: keeping sandbox /var/folders/5x/4nqprlbx0518k3ybcb1sz6gr0000gn/T//mac-setup-test-already-installed.60r9ic
+PASS: already-installed: setup/mac.sh completed in a single pass
+PASS: already-installed: installer never runs when nix is already present
+PASS: already-installed: already-installed fast path ran exactly once
+PASS: already-installed: first-activation path not used
+
+All checks passed.

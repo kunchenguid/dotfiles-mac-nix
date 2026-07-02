@@ -1,0 +1,7 @@
+sh -s -- install
+curl --proto =https --tlsv1.2 -sSf -L https://install.determinate.systems/nix
+curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+sudo /var/folders/5x/4nqprlbx0518k3ybcb1sz6gr0000gn/T//mac-setup-test-fresh-machine.qMhttW/fake-nix/var/nix/profiles/default/bin/nix --extra-experimental-features nix-command flakes run nix-darwin/master#darwin-rebuild -- switch --flake /var/folders/5x/4nqprlbx0518k3ybcb1sz6gr0000gn/T/mac-setup-test-fresh-machine.qMhttW/repo#mac
+nix --extra-experimental-features nix-command flakes run nix-darwin/master#darwin-rebuild -- switch --flake /var/folders/5x/4nqprlbx0518k3ybcb1sz6gr0000gn/T/mac-setup-test-fresh-machine.qMhttW/repo#mac
+bash -c curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+nvm install --lts
