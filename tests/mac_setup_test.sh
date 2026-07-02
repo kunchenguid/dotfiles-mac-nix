@@ -64,6 +64,70 @@ assert_line_count() {
   return 0
 }
 
+# Refuse harness writes that escape the per-scenario temp sandbox. Stubs source
+# the generated copy at $SANDBOX_GUARD and call guard_write_path before writing.
+assert_path_under_sandbox() {
+  local target="$1"
+  local abs_sandbox parent resolved
+
+  if [ -z "${SANDBOX_ROOT:-}" ]; then
+    echo "HERMETIC VIOLATION: SANDBOX_ROOT is unset (refusing write to $target)" >&2
+    exit 1
+  fi
+
+  abs_sandbox=$(cd "$SANDBOX_ROOT" && pwd -P)
+
+  parent=$(dirname "$target")
+  if [ -d "$parent" ]; then
+    resolved=$(cd "$parent" && pwd -P)/$(basename "$target")
+    case "$resolved" in
+      "$abs_sandbox" | "$abs_sandbox"/*) return 0 ;;
+    esac
+  fi
+
+  case "$target" in
+    "$SANDBOX_ROOT" | "$SANDBOX_ROOT"/*) return 0 ;;
+    "$abs_sandbox" | "$abs_sandbox"/*) return 0 ;;
+  esac
+
+  echo "HERMETIC VIOLATION: refusing to write outside sandbox: $target (sandbox: $abs_sandbox)" >&2
+  exit 1
+}
+
+write_sandbox_guard() {
+  local guard_path="$1"
+  assert_path_under_sandbox "$guard_path"
+  cat > "$guard_path" <<'GUARD'
+guard_write_path() {
+  local target="$1"
+  local abs_sandbox parent resolved
+
+  if [ -z "${SANDBOX_ROOT:-}" ]; then
+    echo "HERMETIC VIOLATION: SANDBOX_ROOT is unset (refusing write to $target)" >&2
+    exit 1
+  fi
+
+  abs_sandbox=$(cd "$SANDBOX_ROOT" && pwd -P)
+
+  parent=$(dirname "$target")
+  if [ -d "$parent" ]; then
+    resolved=$(cd "$parent" && pwd -P)/$(basename "$target")
+    case "$resolved" in
+      "$abs_sandbox" | "$abs_sandbox"/*) return 0 ;;
+    esac
+  fi
+
+  case "$target" in
+    "$SANDBOX_ROOT" | "$SANDBOX_ROOT"/*) return 0 ;;
+    "$abs_sandbox" | "$abs_sandbox"/*) return 0 ;;
+  esac
+
+  echo "HERMETIC VIOLATION: refusing to write outside sandbox: $target (sandbox: $abs_sandbox)" >&2
+  exit 1
+}
+GUARD
+}
+
 # Copy the repo into a scratch dir and replace the placeholder values so the
 # guard clause at the top of setup/mac.sh lets the run proceed.
 make_fixture_repo() {
@@ -81,6 +145,7 @@ make_fixture_repo() {
 
 write_stub() {
   local path="$1"
+  assert_path_under_sandbox "$path"
   mkdir -p "$(dirname "$path")"
   cat > "$path"
   chmod +x "$path"
@@ -95,6 +160,9 @@ write_shared_stubs() {
 
   write_stub "$stub_bin/curl" <<'EOF'
 #!/bin/bash
+# shellcheck source=/dev/null
+. "$SANDBOX_GUARD"
+guard_write_path "$STUB_LOG"
 echo "curl $*" >> "$STUB_LOG"
 url=""
 for a in "$@"; do
@@ -116,14 +184,23 @@ EOF
 
   write_stub "$stub_bin/sh" <<'EOF'
 #!/bin/bash
+# shellcheck source=/dev/null
+. "$SANDBOX_GUARD"
+guard_write_path "$STUB_LOG"
 echo "sh $*" >> "$STUB_LOG"
 cat >/dev/null
 # Simulate what the real Determinate installer does: drop a daemon profile
 # script and make a `nix` binary discoverable once that profile is sourced.
+guard_write_path "$NIX_DAEMON_PROFILE"
+guard_write_path "$STUB_NIX_BIN_DIR"
 mkdir -p "$(dirname "$NIX_DAEMON_PROFILE")"
 mkdir -p "$STUB_NIX_BIN_DIR"
+guard_write_path "$STUB_NIX_BIN_DIR/nix"
 cat > "$STUB_NIX_BIN_DIR/nix" <<'NIXBIN'
 #!/bin/bash
+# shellcheck source=/dev/null
+. "$SANDBOX_GUARD"
+guard_write_path "$STUB_LOG"
 echo "nix $*" >> "$STUB_LOG"
 exit 0
 NIXBIN
@@ -135,6 +212,9 @@ EOF
 
   write_stub "$stub_bin/sudo" <<'EOF'
 #!/bin/bash
+# shellcheck source=/dev/null
+. "$SANDBOX_GUARD"
+guard_write_path "$STUB_LOG"
 echo "sudo $*" >> "$STUB_LOG"
 exec "$@"
 EOF
@@ -143,8 +223,12 @@ EOF
   # every other bash invocation in the script uses an absolute /bin/bash.
   write_stub "$stub_bin/bash" <<'EOF'
 #!/bin/bash
+# shellcheck source=/dev/null
+. "$SANDBOX_GUARD"
+guard_write_path "$STUB_LOG"
 echo "bash $*" >> "$STUB_LOG"
 if [ -n "${NVM_DIR:-}" ]; then
+  guard_write_path "$NVM_DIR/nvm.sh"
   mkdir -p "$NVM_DIR"
   cat > "$NVM_DIR/nvm.sh" <<'NVMSH'
 nvm() { echo "nvm $*" >> "$STUB_LOG"; }
@@ -170,6 +254,10 @@ run_scenario() {
   log="$sandbox/log"
 
   mkdir -p "$stub_bin" "$home_dir"
+  export SANDBOX_ROOT="$sandbox"
+  write_sandbox_guard "$sandbox/sandbox-guard.sh"
+  export SANDBOX_GUARD="$sandbox/sandbox-guard.sh"
+  assert_path_under_sandbox "$log"
   : > "$log"
   make_fixture_repo "$fixture"
   write_shared_stubs "$stub_bin"
@@ -178,18 +266,27 @@ run_scenario() {
   export STUB_NIX_BIN_DIR="$sandbox/fake-nix/var/nix/profiles/default/bin"
   export NIX_DAEMON_PROFILE="$sandbox/fake-nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
   export HOME="$home_dir"
+  # Re-home NVM_DIR: an inherited absolute NVM_DIR (e.g. from hm-session-vars.sh)
+  # would otherwise leak writes out of the sandbox when the bash stub runs.
+  export NVM_DIR="$HOME/.nvm"
 
   if [ "$name" = "already-installed" ]; then
     # Simulate a machine that has already been bootstrapped once: nix and
     # darwin-rebuild are already resolvable, so the installer must not run.
     write_stub "$stub_bin/nix" <<'EOF'
 #!/bin/bash
+# shellcheck source=/dev/null
+. "$SANDBOX_GUARD"
+guard_write_path "$STUB_LOG"
 echo "nix $*" >> "$STUB_LOG"
 exit 0
 EOF
     export DARWIN_REBUILD_BIN="$sandbox/current-system/sw/bin/darwin-rebuild"
     write_stub "$DARWIN_REBUILD_BIN" <<'EOF'
 #!/bin/bash
+# shellcheck source=/dev/null
+. "$SANDBOX_GUARD"
+guard_write_path "$STUB_LOG"
 echo "darwin-rebuild $*" >> "$STUB_LOG"
 exit 0
 EOF
