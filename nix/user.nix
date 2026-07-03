@@ -54,7 +54,18 @@ in
   home.sessionPath = [
     "${config.home.homeDirectory}/.local/bin"
     "${config.home.homeDirectory}/.cargo/bin"
+    "${config.home.homeDirectory}/.npm-global/bin"
   ];
+
+  # The Nix-provided Node lives in the read-only /nix/store, so `npm install -g`
+  # needs its own writable global prefix instead of trying to write next to it.
+  programs.npm = {
+    enable = true;
+    package = pkgs.nodejs_22;
+    settings = {
+      prefix = "${config.home.homeDirectory}/.npm-global";
+    };
+  };
 
   programs.git = {
     enable = true;

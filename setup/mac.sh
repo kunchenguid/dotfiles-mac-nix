@@ -35,6 +35,11 @@ if ! command -v claude &> /dev/null; then
   curl -fsSL https://claude.ai/install.sh | bash
 fi
 
+# home-manager just wrote ~/.npmrc pointing npm's global prefix at
+# ~/.npm-global (writable), instead of the read-only /nix/store. Pick up the
+# new bin dir now so the checks below see tools installed in this same run.
+export PATH="$HOME/.npm-global/bin:$PATH"
+
 # Install other agent harnesses if missing
 if ! command -v codex &> /dev/null; then
   npm install -g @openai/codex
