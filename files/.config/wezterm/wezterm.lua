@@ -40,8 +40,8 @@ config.window_padding = {
 	bottom = 8,
 }
 
--- 使用 macOS 原生全屏
-config.native_macos_fullscreen_mode = true
+-- 使用 WezTerm 全屏以保留透明和模糊效果
+config.native_macos_fullscreen_mode = false
 
 -- 简洁标签栏
 config.use_fancy_tab_bar = false
@@ -61,6 +61,11 @@ config.keys = {
 		key = "v",
 		mods = "CMD",
 		action = wezterm.action.PasteFrom("Clipboard"),
+	},
+	{
+		key = "f",
+		mods = "CTRL|CMD",
+		action = wezterm.action.ToggleFullScreen,
 	},
 	{
 		key = "|",
