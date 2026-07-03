@@ -1,8 +1,11 @@
 # dotfiles-mac-nix
 
-This is my personal Mac setup, forked from [kunchenguid/dotfiles-mac-nix](https://github.com/kunchenguid/dotfiles-mac-nix). Unlike the upstream repo — which is deliberately trimmed down to be a shareable starter template — this fork is not meant for other people to use. It exists so I can continuously track how my machine and, especially, my agentic engineering workflow are configured, and keep evolving both over time: new tools, new agent skills, new personal preferences, all committed as they change.
+This is my personal Mac setup, forked from [kunchenguid/dotfiles-mac-nix](https://github.com/kunchenguid/dotfiles-mac-nix).
+Unlike the upstream repo - which is deliberately trimmed down to be a shareable starter template - this fork is not meant for other people to use.
+It exists so I can continuously track how my machine and, especially, my agentic engineering workflow are configured, and keep evolving both over time: new tools, new agent skills, new personal preferences, all committed as they change.
 
-It is built with [Nix](https://nixos.org/), [`nix-darwin`](https://github.com/nix-darwin/nix-darwin), [Home Manager](https://github.com/nix-community/home-manager), and declarative [Homebrew](https://brew.sh/). For the reasoning behind the original template's design, see the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web) — most of it still applies here, minus the "keep it generic" constraint.
+It is built with [Nix](https://nixos.org/), [`nix-darwin`](https://github.com/nix-darwin/nix-darwin), [Home Manager](https://github.com/nix-community/home-manager), and declarative [Homebrew](https://brew.sh/).
+For the reasoning behind the original template's design, see the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web) - most of it still applies here, minus the "keep it generic" constraint.
 
 ## What this repo does
 
@@ -30,20 +33,23 @@ This repo also bootstraps the terminal-centric, multi-agent workflow described i
 
 ## Personal fork, not a template
 
-The upstream repo intentionally excludes editor config, personal scripts, agent memory files, and other workflow-specific material so it stays usable as a generic starting point for other people. That constraint doesn't apply here — this fork is for my use only, so going forward I plan to fold those things in too: editor config, personal scripts, agent memory files (`~/.claude/CLAUDE.md` and friends), and other personal preferences as they stabilize enough to be worth versioning.
+The upstream repo intentionally excludes editor config, personal scripts, agent memory files, and other workflow-specific material so it stays usable as a generic starting point for other people.
+That constraint doesn't apply here - this fork is for my use only, so going forward I plan to fold those things in too: editor config, personal scripts, agent memory files (`~/.claude/CLAUDE.md` and friends), and other personal preferences as they stabilize enough to be worth versioning.
 
 The one thing that stays out regardless: secrets and tokens. Nothing that grants access to an account or service belongs in this repo, personal-use or not.
 
 ## Repo structure
 
-- `setup/mac.sh` — bootstrap a fresh Mac, including agent harnesses and workflow CLIs
-- `flake.nix` — top-level Nix wiring (nixpkgs, nix-darwin, home-manager, treehouse)
-- `nix/host.nix` — machine-level macOS config (nix-darwin), Homebrew brews/casks
-- `nix/user.nix` — user environment: packages, shell, git, tmux, fonts, dotfiles (Home Manager)
-- `files/.config/wezterm/wezterm.lua` — WezTerm config linked into place
-- `files/agents/AGENTS.md` — global agent memory file, symlinked into every harness's expected location
-- `files/agents/OPINIONS.md`, `files/agents/VOICE.md` — referenced conditionally from `AGENTS.md`, symlinked to `~/OPINIONS.md` and `~/VOICE.md`
-- `blog.md` — local copy of the upstream author's [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
+- `setup/mac.sh` - bootstrap a fresh Mac
+- `setup/README.md` - bootstrap usage and testing notes
+- `flake.nix` - top-level Nix wiring (nixpkgs, nix-darwin, home-manager, treehouse)
+- `nix/host.nix` - machine-level macOS config (nix-darwin), Homebrew brews/casks
+- `nix/user.nix` - user environment: packages, shell, git, tmux, fonts, dotfiles (Home Manager)
+- `files/.config/wezterm/wezterm.lua` - WezTerm config linked into place
+- `files/agents/AGENTS.md` - global agent memory file, symlinked into every harness's expected location
+- `files/agents/OPINIONS.md`, `files/agents/VOICE.md` - referenced conditionally from `AGENTS.md`, symlinked to `~/OPINIONS.md` and `~/VOICE.md`
+- `tests/` - regression tests for the bootstrap script
+- `blog.md` - local copy of the upstream author's [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
 
 ## Setting up a new Mac from this repo
 
@@ -62,7 +68,12 @@ The script will:
 - apply the `nix-darwin` + Home Manager config
 - install [`nvm`](https://github.com/nvm-sh/nvm) and a default Node.js version if needed
 
-On a fresh machine, Homebrew and `npm install -g` (used for the agent harnesses below) are both being set up on this very first run, so their bin directories aren't on `PATH` yet in your current shell. Open a new terminal window/tab after the script finishes so the shell picks up the updated `PATH`.
+On a fresh machine, the bootstrap is designed to complete in one run.
+After the Determinate installer runs, the script sources the Nix daemon profile into the current shell and uses an absolute `nix` path for the first `nix-darwin` activation, so you should not need a second shell or a second setup run.
+Homebrew and `npm install -g` are also set up during that first run, so open a new terminal window after the script finishes if your current shell has not picked up the new bin directories yet.
+
+The `NIX_DAEMON_PROFILE` and `DARWIN_REBUILD_BIN` environment variables are only there so the regression test can point the script at sandboxed paths.
+Normal use should leave them unset.
 
 ## How I manage changes later
 
@@ -80,6 +91,18 @@ This alias is included in the shell config and expands to the repo path used in 
 ```bash
 sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/github/dotfiles-mac-nix#mac
 ```
+
+## Testing
+
+Do not run `setup/mac.sh` against a development or CI machine just to test it.
+Run the sandboxed regression test instead:
+
+```bash
+bash tests/mac_setup_test.sh
+```
+
+It runs the real script logic with stub executables for `curl`, `sh`, `nix`, `darwin-rebuild`, `sudo`, and `bash`, covering both a fresh-machine single-pass bootstrap and the already-bootstrapped fast path.
+The harness also guards every harness/stub write against sandbox escapes, re-homes `NVM_DIR` under the sandboxed `HOME`, and unsets inherited `BASH_ENV`/`ENV` hooks before invoking the script under test.
 
 ## Where to add new tools
 
