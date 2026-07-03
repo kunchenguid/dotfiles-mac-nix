@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, treehouse, ... }:
 
 let
   dotfilesDir = "${config.home.homeDirectory}/repos/github/dotfiles-mac-nix";
@@ -33,6 +33,9 @@ in
     awscli2
     zip
     unzip
+    # Git worktree manager for running parallel agent sessions without
+    # them stepping on each other (github.com/kunchenguid/treehouse)
+    treehouse.packages.${pkgs.system}.default
     nerd-fonts.hack
     roboto
     noto-fonts
@@ -152,6 +155,56 @@ in
       # Ensure nix-managed tools (e.g. uv, node) take priority over conda's,
       # since conda init above prepends its own bin dir to PATH.
       export PATH="/etc/profiles/per-user/yuweiyan/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin:$PATH"
+    '';
+  };
+
+  programs.tmux = {
+    enable = true;
+    keyMode = "vi";
+    mouse = true;
+    baseIndex = 1;
+    escapeTime = 0;
+    historyLimit = 50000;
+    terminal = "tmux-256color";
+    plugins = with pkgs.tmuxPlugins; [
+      sensible
+      yank
+      {
+        plugin = resurrect;
+        extraConfig = ''
+          set -g @resurrect-capture-pane-contents 'on'
+          set -g @resurrect-strategy-nvim 'session'
+        '';
+      }
+      {
+        plugin = continuum;
+        extraConfig = ''
+          set -g @continuum-restore 'on'
+          set -g @continuum-save-interval '15'
+        '';
+      }
+    ];
+    extraConfig = ''
+      set -g renumber-windows on
+      set -ga terminal-overrides ",*256col*:Tc"
+
+      # Split panes in the current path with | and -, keep default % and " too
+      bind | split-window -h -c "#{pane_current_path}"
+      bind - split-window -v -c "#{pane_current_path}"
+
+      # Vim-style pane navigation, repeatable
+      bind -r h select-pane -L
+      bind -r j select-pane -D
+      bind -r k select-pane -U
+      bind -r l select-pane -R
+
+      # Status bar
+      set -g status-position top
+      set -g status-style "bg=default,fg=#908caa"
+      set -g status-left "#[fg=#c4a7e7,bold] #S "
+      set -g status-right "#[fg=#908caa] %Y-%m-%d %H:%M "
+      setw -g window-status-current-format "#[fg=#e0def4,bold] #I:#W "
+      setw -g window-status-format "#[fg=#6e6a86] #I:#W "
     '';
   };
 

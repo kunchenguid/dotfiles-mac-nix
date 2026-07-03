@@ -12,10 +12,15 @@
     taps = [ ];
     brews = [
       "autoconf"
+      # OpenCode: model-agnostic coding agent CLI/TUI (homebrew-core formula)
+      "opencode"
     ];
     casks = [
       "wezterm"
       "amethyst"
+      # Free/open-source local Whisper dictation app used for voice-driven
+      # agent prompting (Starmel/OpenSuperWhisper)
+      "opensuperwhisper"
     ];
   };
 

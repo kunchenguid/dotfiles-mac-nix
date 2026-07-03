@@ -18,16 +18,32 @@ It gives you a structured starting point for managing a Mac setup in code:
 
 I include [WezTerm](https://wezfurlong.org/wezterm/) as the one concrete app-config example because it is real enough to demonstrate the pattern without dragging in the more personal parts of my workflow.
 
+## Agentic engineering workflow
+
+This repo also bootstraps the terminal-centric, multi-agent workflow described in ["L8 Principal's Agentic Engineering Workflow"](https://www.youtube.com/watch?v=iQyg-KypKAA):
+
+- **Agent harnesses**: [Claude Code](https://claude.ai), [Codex CLI](https://github.com/openai/codex), [Pi](https://github.com/earendil-works/pi), and [OpenCode](https://github.com/sst/opencode)
+- **Session management**: `tmux`, configured declaratively via `programs.tmux` in `nix/user.nix` (vi copy-mode, mouse support, session persistence via `tmux-resurrect`/`tmux-continuum`)
+- **Parallel work**: [Treehouse](https://github.com/kunchenguid/treehouse) for disposable git worktrees per agent session, pulled in as a Nix flake input
+- **Planning & review pipeline**: [Lavish](https://github.com/kunchenguid/lavish-axi) (interactive HTML planning artifacts) and [No Mistakes](https://github.com/kunchenguid/no-mistakes) (review/test/docs/PR pipeline)
+- **Long-running agents**: [Good Night, Have Fun](https://github.com/kunchenguid/gnhf) for unattended agent loops against a stop condition
+- **Agent-ergonomic tools**: the [AXI](https://github.com/kunchenguid/axi) family (`gh-axi`, `chrome-devtools-axi`) and the [Vercel `skills` CLI](https://github.com/vercel-labs/skills) for installing/managing agent skills
+- **Voice input**: [OpenSuperWhisper](https://github.com/Starmel/OpenSuperWhisper), a local Whisper dictation app, installed as a Homebrew cask
+
+`setup/mac.sh` installs the npm-distributed pieces (Codex, Pi, `skills`, `gnhf`, `no-mistakes`) and registers the AXI-family skills globally. Homebrew (`nix/host.nix`) handles OpenCode and OpenSuperWhisper. Treehouse is a proper Nix package via the flake input.
+
+Not included: a multi-agent orchestrator like [First Mate](https://github.com/kunchenguid/firstmate) (it's meant to be cloned as its own project workspace, not installed system-wide) and personal memory files (`~/.claude/CLAUDE.md` and friends) — those preferences are yours to write, not something a starter repo should invent for you.
+
 ## What is intentionally not included
 
 This repo does **not** try to mirror my entire machine.
 
 I left out things that are too personal or too workflow-specific to make a good public starter repo, including:
 
-- editor config
+- editor config (bring your own — mine lives in its own repo)
 - custom shell systems
 - personal scripts
-- AI tooling
+- agent memory files and personal preferences
 - secrets and tokens
 - private automation
 
@@ -35,10 +51,10 @@ The goal is to provide a reusable foundation that you can make your own.
 
 ## Repo structure
 
-- `setup/mac.sh` — bootstrap a fresh Mac
-- `flake.nix` — top-level Nix wiring
-- `nix/host.nix` — machine-level macOS config (nix-darwin)
-- `nix/user.nix` — user environment: packages, shell, git, fonts, dotfiles (Home Manager)
+- `setup/mac.sh` — bootstrap a fresh Mac, including agent harnesses and workflow CLIs
+- `flake.nix` — top-level Nix wiring (nixpkgs, nix-darwin, home-manager, treehouse)
+- `nix/host.nix` — machine-level macOS config (nix-darwin), Homebrew brews/casks
+- `nix/user.nix` — user environment: packages, shell, git, tmux, fonts, dotfiles (Home Manager)
 - `files/.config/wezterm/wezterm.lua` — example app config linked into place
 - `blog.md` — local copy of the [blog post](https://open.substack.com/pub/kunchenguid/p/how-i-built-a-reproducible-mac-setup?utm_campaign=post-expanded-share&utm_medium=web)
 

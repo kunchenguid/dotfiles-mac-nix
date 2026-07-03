@@ -35,6 +35,38 @@ if ! command -v claude &> /dev/null; then
   curl -fsSL https://claude.ai/install.sh | bash
 fi
 
+# Install other agent harnesses if missing
+if ! command -v codex &> /dev/null; then
+  npm install -g @openai/codex
+fi
+
+if ! command -v pi &> /dev/null; then
+  npm install -g @earendil-works/pi-coding-agent
+fi
+
+# Vercel's skills CLI for installing/managing agent skills across harnesses
+if ! command -v skills &> /dev/null; then
+  npm install -g skills
+fi
+
+# Kun Chen's open-source agent-ergonomics tooling (github.com/kunchenguid)
+if ! command -v gnhf &> /dev/null; then
+  npm install -g gnhf
+fi
+
+if ! command -v no-mistakes &> /dev/null; then
+  curl -fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh | sh
+fi
+
+# Register the AXI-family tools as globally available agent skills
+if command -v skills &> /dev/null; then
+  skills add kunchenguid/lavish-axi --skill lavish -g
+  skills add kunchenguid/axi -g
+  skills add kunchenguid/gh-axi --skill gh-axi -g
+  skills add kunchenguid/chrome-devtools-axi --skill chrome-devtools-axi -g
+  skills add anthropics/skills --skill skill-creator -g
+fi
+
 # Install nvm and a default Node.js if missing
 export NVM_DIR="$HOME/.nvm"
 if [ ! -d "$NVM_DIR" ]; then
