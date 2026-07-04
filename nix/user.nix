@@ -29,7 +29,10 @@ in
     btop
     rclone
     cmake
-    neovim
+    nil
+    lua-language-server
+    pyright
+    typescript-language-server
     awscli2
     zip
     unzip
@@ -65,6 +68,221 @@ in
     settings = {
       prefix = "${config.home.homeDirectory}/.npm-global";
     };
+  };
+
+  programs.neovim = {
+    enable = true;
+    defaultEditor = false;
+    withPython3 = false;
+    withRuby = false;
+    viAlias = true;
+    vimAlias = true;
+    plugins = with pkgs.vimPlugins; [
+      neogit
+      diffview-nvim
+      telescope-nvim
+      plenary-nvim
+      neo-tree-nvim
+      nui-nvim
+      nvim-web-devicons
+      rose-pine
+      (nvim-treesitter.withPlugins (p: with p; [
+        bash
+        c
+        css
+        html
+        javascript
+        json
+        lua
+        markdown
+        markdown_inline
+        nix
+        python
+        rust
+        toml
+        tsx
+        typescript
+        vim
+        vimdoc
+        yaml
+      ]))
+      nvim-lspconfig
+      nvim-cmp
+      cmp-nvim-lsp
+      cmp-buffer
+      cmp-path
+      luasnip
+      cmp_luasnip
+      gitsigns-nvim
+      lualine-nvim
+      which-key-nvim
+    ];
+    initLua = ''
+      vim.g.mapleader = " "
+      vim.g.maplocalleader = " "
+
+      vim.opt.number = true
+      vim.opt.relativenumber = true
+      vim.opt.signcolumn = "yes"
+      vim.opt.termguicolors = true
+      vim.opt.ignorecase = true
+      vim.opt.smartcase = true
+      vim.opt.expandtab = true
+      vim.opt.shiftwidth = 2
+      vim.opt.tabstop = 2
+      vim.opt.updatetime = 250
+      vim.opt.timeoutlen = 400
+      vim.opt.winblend = 10
+      vim.opt.pumblend = 10
+
+      vim.cmd("packloadall")
+      for _, plugin_dir in ipairs(vim.fn.globpath(vim.o.packpath, "pack/*/start/*", false, true)) do
+        vim.opt.runtimepath:prepend(plugin_dir)
+      end
+
+      local function map(mode, lhs, rhs, desc)
+        vim.keymap.set(mode, lhs, rhs, { desc = desc, silent = true })
+      end
+
+      require("rose-pine").setup({
+        variant = "moon",
+        dark_variant = "moon",
+        styles = {
+          transparency = true,
+        },
+        highlight_groups = {
+          EndOfBuffer = { bg = "NONE" },
+          LineNr = { bg = "NONE" },
+          CursorLineNr = { bg = "NONE" },
+          NeoTreeNormal = { bg = "NONE" },
+          NeoTreeNormalNC = { bg = "NONE" },
+          NeoTreeEndOfBuffer = { bg = "NONE" },
+          NeoTreeWinSeparator = { fg = "muted", bg = "NONE" },
+          NeogitNormal = { bg = "NONE" },
+          NeogitPopupSwitchKey = { bg = "NONE" },
+          NeogitPopupOptionKey = { bg = "NONE" },
+          NeogitPopupConfigKey = { bg = "NONE" },
+          NeogitPopupActionKey = { bg = "NONE" },
+          CmpDocumentation = { bg = "NONE" },
+          CmpDocumentationBorder = { bg = "NONE" },
+        },
+      })
+      vim.cmd("colorscheme rose-pine-moon")
+
+      require("which-key").setup({})
+      require("lualine").setup({
+        options = {
+          theme = "rose-pine",
+        },
+      })
+      require("gitsigns").setup({})
+      require("nvim-treesitter").setup({})
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = {
+          "bash",
+          "c",
+          "css",
+          "html",
+          "javascript",
+          "json",
+          "lua",
+          "markdown",
+          "nix",
+          "python",
+          "rust",
+          "toml",
+          "typescript",
+          "typescriptreact",
+          "vim",
+          "yaml",
+        },
+        callback = function()
+          pcall(vim.treesitter.start)
+        end,
+      })
+
+      require("neo-tree").setup({
+        filesystem = {
+          follow_current_file = { enabled = true },
+          use_libuv_file_watcher = true,
+        },
+      })
+
+      require("telescope").setup({})
+      local telescope_builtin = require("telescope.builtin")
+      require("neogit").setup({
+        integrations = {
+          diffview = true,
+          telescope = true,
+        },
+      })
+
+      local cmp = require("cmp")
+      local luasnip = require("luasnip")
+      cmp.setup({
+        snippet = {
+          expand = function(args)
+            luasnip.lsp_expand(args.body)
+          end,
+        },
+        mapping = cmp.mapping.preset.insert({
+          ["<C-Space>"] = cmp.mapping.complete(),
+          ["<CR>"] = cmp.mapping.confirm({ select = true }),
+          ["<Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_next_item()
+            elseif luasnip.expand_or_jumpable() then
+              luasnip.expand_or_jump()
+            else
+              fallback()
+            end
+          end, { "i", "s" }),
+          ["<S-Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            elseif luasnip.jumpable(-1) then
+              luasnip.jump(-1)
+            else
+              fallback()
+            end
+          end, { "i", "s" }),
+        }),
+        sources = cmp.config.sources({
+          { name = "nvim_lsp" },
+          { name = "luasnip" },
+          { name = "path" },
+          { name = "buffer" },
+        }),
+      })
+
+      local capabilities = require("cmp_nvim_lsp").default_capabilities()
+      local servers = {
+        "nil_ls",
+        "lua_ls",
+        "pyright",
+        "rust_analyzer",
+        "ts_ls",
+      }
+      for _, server in ipairs(servers) do
+        vim.lsp.config(server, { capabilities = capabilities })
+        vim.lsp.enable(server)
+      end
+
+      map("n", "<leader>e", "<cmd>Neotree toggle<cr>", "Toggle file tree")
+      map("n", "<leader>ff", function()
+        telescope_builtin.find_files({ hidden = true })
+      end, "Find files")
+      map("n", "<leader>fg", telescope_builtin.live_grep, "Search text")
+      map("n", "<leader>fb", telescope_builtin.buffers, "Find buffers")
+      map("n", "<leader>gg", "<cmd>Neogit<cr>", "Open Neogit")
+      map("n", "<leader>gd", vim.lsp.buf.definition, "Go to definition")
+      map("n", "<leader>gr", vim.lsp.buf.references, "Find references")
+      map("n", "<leader>rn", vim.lsp.buf.rename, "Rename symbol")
+      map("n", "<leader>ca", vim.lsp.buf.code_action, "Code action")
+      map("n", "<leader>df", vim.diagnostic.open_float, "Show diagnostic")
+      map("n", "[d", vim.diagnostic.goto_prev, "Previous diagnostic")
+      map("n", "]d", vim.diagnostic.goto_next, "Next diagnostic")
+    '';
   };
 
   programs.git = {
