@@ -11,9 +11,11 @@
       url = "github:nix-community/home-manager/release-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # herdr isn't in nixpkgs-24.11 yet, so it's pulled straight from its own flake
+    herdr.url = "github:ogulcancelik/herdr";
   };
 
-  outputs = { nixpkgs, nix-darwin, home-manager, ... }: {
+  outputs = { nixpkgs, nix-darwin, home-manager, herdr, ... }: {
     darwinConfigurations.mac = nix-darwin.lib.darwinSystem {
       system = "x86_64-darwin";
       modules = [
@@ -23,6 +25,7 @@
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
           home-manager.backupFileExtension = "backup";
+          home-manager.extraSpecialArgs = { inherit herdr; };
           home-manager.users.yash_khandelwal = import ./nix/user.nix;
         }
       ];

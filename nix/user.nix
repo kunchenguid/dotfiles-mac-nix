@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, herdr, ... }:
 
 let
   dotfilesDir = "${config.home.homeDirectory}/Desktop/Latest-Desktop/Reproducible Mac/dotfiles-mac-nix";
@@ -30,6 +30,7 @@ in
     docker-client
     docker-compose
     neovim
+    herdr.packages.${pkgs.system}.default
     (nerdfonts.override { fonts = [ "Hack" ]; })
     roboto
     noto-fonts
@@ -123,6 +124,8 @@ in
       dstop = "colima stop";
       dstatus = "colima status";
       vim = "nvim";
+      cc = "claude --dangerously-skip-permissions";
+      co = "codex --full-auto";
     };
     envExtra = ''
       # Prefer Temurin 21 (managed via dotfiles); fall back to any Java 21 on the machine
@@ -224,5 +227,7 @@ in
 
   home.file = {
     ".config/wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/wezterm";
+    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/nvim";
+    ".config/herdr".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/.config/herdr";
   };
 }
