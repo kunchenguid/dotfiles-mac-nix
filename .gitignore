@@ -1,5 +1,5 @@
 # Tmux log files — kept in logs/ folder, never committed
 logs/*.log
 
-# Ignore any stray log files at repo root
-*.log
+# no-mistakes pipeline evidence should never be committed to this public repo
+.no-mistakes/
