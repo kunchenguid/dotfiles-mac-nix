@@ -60,7 +60,7 @@
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": false,
-    "excludedCommands": ["gh *", "npx gh-axi *"],
+    "excludedCommands": ["gh *", "npx gh-axi *", "npx -y gh-axi *"],
     "network": {
       "allowedDomains": [
         "github.com",
@@ -81,6 +81,9 @@
         "~/.pypirc",
         "**/.env",
         "**/.env.*"
+      ],
+      "allowWrite": [
+        "~/.npm"
       ]
     },
     "credentials": {
@@ -108,6 +111,7 @@
       ]
     }
   },
+  "autoMemoryDirectory": "~/.claude/memory",
   "effortLevel": "xhigh",
   "tui": "fullscreen",
   "voice": {
