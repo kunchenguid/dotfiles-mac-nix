@@ -82,8 +82,37 @@ if ! command -v gnhf &> /dev/null; then
   npm install -g gnhf
 fi
 
+if ! command -v gh-axi &> /dev/null; then
+  npm install -g gh-axi
+fi
+
+if ! command -v chrome-devtools-axi &> /dev/null; then
+  npm install -g chrome-devtools-axi
+fi
+
+if ! command -v lavish-axi &> /dev/null; then
+  npm install -g lavish-axi
+fi
+
+if ! command -v tasks-axi &> /dev/null; then
+  npm install -g tasks-axi
+fi
+
 if ! command -v no-mistakes &> /dev/null; then
   curl -fsSL https://raw.githubusercontent.com/kunchenguid/no-mistakes/main/docs/install.sh | sh
+fi
+
+# First Mate is a checkout, not an app package: launch an agent from inside
+# this repo and its AGENTS.md plus bin/ toolbelt become the orchestrator.
+: "${FIRSTMATE_DIR:=$HOME/github/firstmate}"
+if [ -d "$FIRSTMATE_DIR/.git" ]; then
+  git -C "$FIRSTMATE_DIR" pull --ff-only
+elif [ -e "$FIRSTMATE_DIR" ]; then
+  echo "First Mate path exists but is not a git checkout: $FIRSTMATE_DIR" >&2
+  exit 1
+else
+  mkdir -p "$(dirname "$FIRSTMATE_DIR")"
+  git clone https://github.com/kunchenguid/firstmate "$FIRSTMATE_DIR"
 fi
 
 # Register the AXI-family tools as globally available agent skills
@@ -92,6 +121,7 @@ if command -v skills &> /dev/null; then
   skills add kunchenguid/axi -g
   skills add kunchenguid/gh-axi --skill gh-axi -g
   skills add kunchenguid/chrome-devtools-axi --skill chrome-devtools-axi -g
+  skills add kunchenguid/tasks-axi --skill tasks-axi -g
   skills add anthropics/skills --skill skill-creator -g
 fi
 

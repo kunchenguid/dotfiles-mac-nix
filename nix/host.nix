@@ -21,6 +21,12 @@
       # Free/open-source local Whisper dictation app used for voice-driven
       # agent prompting (Starmel/OpenSuperWhisper)
       "opensuperwhisper"
+      # Antigravity CLI (agy): Google's terminal agent harness, successor to
+      # Gemini CLI, used to reach Antigravity's models/quota via Google AI
+      # Pro from the terminal. Homebrew cask rather than nixpkgs since it
+      # ships new releases fast and a pinned flake.lock nixpkgs revision
+      # would otherwise lag behind (same reasoning as OpenCode below).
+      "antigravity-cli"
     ];
   };
 

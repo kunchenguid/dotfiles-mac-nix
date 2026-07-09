@@ -21,15 +21,19 @@ It manages my Mac setup as code:
 
 This repo also bootstraps the terminal-centric, multi-agent workflow described in ["L8 Principal's Agentic Engineering Workflow"](https://www.youtube.com/watch?v=iQyg-KypKAA), and is where I track changes to it over time:
 
-- **Agent harnesses**: [Claude Code](https://claude.ai), [Codex CLI](https://github.com/openai/codex), [Pi](https://github.com/earendil-works/pi), and [OpenCode](https://github.com/sst/opencode)
+- **Agent harnesses**: [Claude Code](https://claude.ai), [Codex CLI](https://github.com/openai/codex), [Pi](https://github.com/earendil-works/pi), [OpenCode](https://github.com/sst/opencode), and [Antigravity CLI](https://antigravity.google) (Google, accessed via a Google AI Pro subscription)
 - **Session management**: `tmux`, configured declaratively via `programs.tmux` in `nix/user.nix` (vi copy-mode, mouse support, session persistence via `tmux-resurrect`/`tmux-continuum`)
 - **Parallel work**: [Treehouse](https://github.com/kunchenguid/treehouse) for disposable git worktrees per agent session, pulled in as a Nix flake input. `twget [label]` and `twreturn` (shell functions in `nix/user.nix`) wrap Treehouse's lease mode with tmux, so a lease opens straight into a new tmux window and returning it closes that window
 - **Planning & review pipeline**: [Lavish](https://github.com/kunchenguid/lavish-axi) (interactive HTML planning artifacts) and [No Mistakes](https://github.com/kunchenguid/no-mistakes) (review/test/docs/PR pipeline)
 - **Long-running agents**: [Good Night, Have Fun](https://github.com/kunchenguid/gnhf) for unattended agent loops against a stop condition
+- **Crew orchestration**: [First Mate](https://github.com/kunchenguid/firstmate) as the top-level orchestrator checkout under `~/github/firstmate`.
+  Run `firstmate` from the shell to launch Claude there, or pass another harness such as `firstmate codex`.
 - **Agent-ergonomic tools**: the [AXI](https://github.com/kunchenguid/axi) family (`gh-axi`, `chrome-devtools-axi`) and the [Vercel `skills` CLI](https://github.com/vercel-labs/skills) for installing/managing agent skills
 - **Voice input**: [OpenSuperWhisper](https://github.com/Starmel/OpenSuperWhisper), a local Whisper dictation app, installed as a Homebrew cask
 
-`setup/mac.sh` installs the npm-distributed pieces (Codex, Pi, `skills`, `gnhf`, `no-mistakes`) and registers the AXI-family skills globally. Homebrew (`nix/host.nix`) handles OpenCode and OpenSuperWhisper. Treehouse is a proper Nix package via the flake input.
+`setup/mac.sh` installs the npm-distributed pieces (Codex, Pi, `skills`, `gnhf`, `gh-axi`, `chrome-devtools-axi`, `lavish-axi`, `tasks-axi`, `no-mistakes`), clones or fast-forwards First Mate, and registers the AXI-family skills globally.
+Homebrew (`nix/host.nix`) handles OpenCode, OpenSuperWhisper, and Antigravity CLI.
+Treehouse is a proper Nix package via the flake input.
 
 ## Personal fork, not a template
 

@@ -2,6 +2,38 @@
   "env": {
     "CLAUDE_CODE_DISABLE_MOUSE_CLICKS": "1"
   },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep"
+    ],
+    "deny": [
+      "Bash(sudo*)",
+      "Bash(rm -rf ~*)",
+      "Bash(rm -rf /*)",
+      "Read(~/.ssh/id_*)",
+      "Read(~/.aws/**)",
+      "Read(**/.env)"
+    ],
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/bash-guard.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
     "command": "npx -y ccstatusline@latest",
@@ -23,20 +55,12 @@
     "commit-commands@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true
   },
-  "effortLevel": "xhigh",
-  "tui": "fullscreen",
-  "voice": {
-    "enabled": true,
-    "mode": "hold"
-  },
-  "theme": "dark-daltonized",
-  "agentPushNotifEnabled": true,
-  "voiceEnabled": true,
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": false,
+    "excludedCommands": ["gh *", "npx gh-axi *"],
     "network": {
       "allowedDomains": [
         "github.com",
@@ -61,32 +85,37 @@
     },
     "credentials": {
       "envVars": [
-        { "name": "ANTHROPIC_API_KEY", "mode": "deny" },
-        { "name": "AWS_ACCESS_KEY_ID", "mode": "deny" },
-        { "name": "AWS_SECRET_ACCESS_KEY", "mode": "deny" },
-        { "name": "NPM_TOKEN", "mode": "deny" },
-        { "name": "OPENAI_API_KEY", "mode": "deny" }
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "mode": "deny"
+        },
+        {
+          "name": "NPM_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "mode": "deny"
+        }
       ]
     }
   },
-  "permissions": {
-    "defaultMode": "auto",
-    "allow": [
-      "Read",
-      "Edit",
-      "Write",
-      "Glob",
-      "Grep"
-    ],
-    "deny": [
-      "Bash(sudo*)",
-      "Bash(rm -rf ~*)",
-      "Bash(rm -rf /*)",
-      "Read(~/.ssh/id_*)",
-      "Read(~/.aws/**)",
-      "Read(**/.env)"
-    ]
+  "effortLevel": "xhigh",
+  "tui": "fullscreen",
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
   },
+  "theme": "dark-daltonized",
+  "agentPushNotifEnabled": true,
   "autoMode": {
     "hard_deny": [
       "$defaults",
@@ -96,18 +125,5 @@
       "Piping downloaded/remote content directly into a shell interpreter"
     ]
   },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/bash-guard.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
-  }
+  "voiceEnabled": true
 }

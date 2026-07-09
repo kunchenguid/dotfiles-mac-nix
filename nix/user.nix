@@ -414,6 +414,59 @@ in
           tmux kill-window
         fi
       }
+
+      # Start First Mate from its managed checkout. Pass a harness command to
+      # override the default, e.g. `firstmate codex`.
+      firstmate() {
+        local fm_dir="$HOME/github/firstmate"
+        if [ ! -d "$fm_dir/.git" ]; then
+          echo "First Mate checkout not found at $fm_dir. Run setup/mac.sh first." >&2
+          return 1
+        fi
+
+        cd "$fm_dir" || return 1
+        if [ "$#" -gt 0 ]; then
+          "$@"
+        elif command -v claude >/dev/null 2>&1; then
+          claude
+        else
+          echo "No default harness found. Run: firstmate codex, firstmate opencode, or firstmate pi" >&2
+          return 1
+        fi
+      }
+
+      # no-mistakes agent switchers with dynamic effort
+      use-claude() {
+        local effort="''${1:-medium}"
+        sed -i ''' 's/^agent: .*/agent: claude/' ~/.no-mistakes/config.yaml
+        perl -0777 -pi -e "s/(--effort\n\s+)\w+/\''${1}$effort/" ~/.no-mistakes/config.yaml
+        echo "Switched to claude (effort: $effort)"
+      }
+
+      use-codex() {
+        local effort="''${1:-medium}"
+        sed -i ''' 's/^agent: .*/agent: codex/' ~/.no-mistakes/config.yaml
+        perl -pi -e "s/(model_reasoning_effort=\")\w+(\")/\''${1}$effort\''${2}/" ~/.no-mistakes/config.yaml
+        echo "Switched to codex (effort: $effort)"
+      }
+
+      use-opencode() {
+        sed -i ''' 's/^agent: .*/agent: opencode/' ~/.no-mistakes/config.yaml
+        echo "Switched to opencode"
+      }
+
+      show-agent() {
+        local agent
+        agent=$(awk '/^agent:/ {print $2}' ~/.no-mistakes/config.yaml)
+        local effort="N/A"
+        if [ "$agent" = "claude" ]; then
+          effort=$(awk '/claude:/ {flag=1} flag && /--effort/ {getline; print $2; exit}' ~/.no-mistakes/config.yaml)
+        elif [ "$agent" = "codex" ]; then
+          effort=$(awk -F'"' '/codex:/ {flag=1} flag && /model_reasoning_effort=/ {print $2; exit}' ~/.no-mistakes/config.yaml)
+        fi
+        echo "Active Agent: $agent"
+        echo "Effort Level: $effort"
+      }
     '';
   };
 
@@ -473,11 +526,18 @@ in
     # Global agent memory file, shared across harnesses. Each one insists on
     # its own path/filename (unlike skills, which several of them already
     # read from a common ~/.agents/skills dir), so we symlink all of them to
-    # the same source instead of maintaining four copies.
+    # the same source instead of maintaining five copies.
     ".claude/CLAUDE.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/agents/AGENTS.md";
     ".codex/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/agents/AGENTS.md";
     ".config/opencode/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/agents/AGENTS.md";
     ".pi/agent/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/agents/AGENTS.md";
+    # Antigravity CLI (Google) still keys off the legacy ~/.gemini directory
+    # it inherited from Gemini CLI, and reads AGENTS.md there for global
+    # rules. Docs for this are inconsistent since the tool only shipped in
+    # May 2026 (some sources say ~/.gemini/GEMINI.md instead) - if `agy`
+    # doesn't pick this up in practice, check `agy --help` / its settings
+    # under ~/.gemini/antigravity-cli/ and adjust the path below.
+    ".gemini/AGENTS.md".source = config.lib.file.mkOutOfStoreSymlink "${dotfilesDir}/files/agents/AGENTS.md";
 
     # Referenced conditionally from AGENTS.md above (not loaded by default
     # into every session, only read when the task calls for it).
