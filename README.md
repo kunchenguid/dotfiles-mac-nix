@@ -1,3 +1,7 @@
+> **This setup is superseded.**
+> The current, maintained Mac setup lives at **<https://github.com/kunchenguid/dotfiles>**.
+> This repo remains available as an older reference.
+
 # dotfiles-mac-nix
 
 This repo is the public, reusable core of my Mac setup.
